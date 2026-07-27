@@ -1,0 +1,30 @@
+name: daily-brief
+
+on:
+  schedule:
+    # GitHub Actions cron is ALWAYS in UTC.
+    # Target: ~5:00 AM Sri Lanka (UTC+5:30), EVERY day.
+    #   23:23 UTC  ->  04:53 AM Sri Lanka the next day.
+    # The odd minute (:23) avoids the congested :00/:30 slots, which
+    # reduces GitHub's scheduled-run queue delay. Runs are still best
+    # effort and can drift by up to a couple of hours under load, so
+    # firing early leaves headroom to still arrive around breakfast.
+    # Last "*" = every day of the week.
+    - cron: "23 23 * * *"
+  workflow_dispatch:   # lets you trigger a manual test run from the Actions tab
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python brief.py
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
